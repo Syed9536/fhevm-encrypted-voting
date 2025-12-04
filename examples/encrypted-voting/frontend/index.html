@@ -3,135 +3,156 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Encrypted Voting · Demo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<title>Encrypted Voting — Demo (Zama fhEVM)</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
 <style>
+  /* ---------- Clean professional styles ---------- */
   :root{
-    --bg:#071428;
-    --card:#0f1b2b;
-    --muted:#9fb0c8;
-    --accent:#46e6c3;
+    --bg:#071026; --panel:#0e1722; --muted:#9fb0c8; --accent:#6EE7B7; --accent2:#60A5FA;
     --glass: rgba(255,255,255,0.03);
-    --glass-2: rgba(255,255,255,0.02);
+    --card-radius:14px;
+    --max-width:1100px;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color-scheme: dark;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#e6f1fb;}
-  body{background:linear-gradient(180deg,#031021 0%, #06172a 60%);padding:36px;display:flex;justify-content:center;}
-  .container{width:100%;max-width:1100px;}
-  header{display:flex;align-items:center;gap:18px;margin-bottom:28px}
-  .logo{display:flex;align-items:center;gap:12px}
-  .brand{font-weight:800;font-size:18px}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#041026 0%, #07112a 100%);color:#eaf2fb}
+  a{color:var(--accent)}
+  header{position:sticky;top:0;background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.4));backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.02);z-index:50}
+  .nav{max-width:var(--max-width);margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:20px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#042023}
+  .site-title{font-weight:700;font-size:16px}
+  nav{margin-left:20px}
+  nav a{margin-right:14px;color:var(--muted);text-decoration:none;font-weight:600}
   .nav-right{margin-left:auto;display:flex;gap:10px;align-items:center}
-  .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px 14px;border-radius:12px;color:var(--accent);cursor:pointer;font-weight:700}
-  .btn.ghost{color:var(--muted);border-color:transparent;background:rgba(255,255,255,0.02)}
-  .hero{display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start}
-  .title{font-size:40px;margin:0 0 12px 0;line-height:1.02}
-  .lead{color:var(--muted);margin:0 0 20px}
-  .cards{display:flex;gap:14px;margin-top:22px}
-  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:14px;flex:1;border:1px solid rgba(255,255,255,0.02)}
-  .card h4{margin:0 0 8px;font-size:16px}
-  .card p{margin:0;color:var(--muted);font-size:14px}
-  /* Right panel */
-  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);}
-  .muted{color:var(--muted);font-size:13px}
-  input[type=text]{width:100%;padding:12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit}
-  .small{font-size:13px;color:var(--muted)}
-  .flex{display:flex;gap:10px;align-items:center}
-  .vertical-gap{margin-top:12px}
-  #events{margin-top:12px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;max-height:220px;overflow:auto}
-  .event{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:8px;font-size:13px}
-  .status.pending{color:#ffb66b}
-  .status.success{color:var(--accent)}
-  footer{margin-top:28px;color:var(--muted);text-align:center;font-size:13px}
-  @media (max-width:992px){
-    .hero{grid-template-columns:1fr}
-    header{flex-direction:column;align-items:flex-start;gap:10px}
-    .nav-right{margin-left:0}
-  }
+  .btn{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;padding:8px 12px;border-radius:10px;color:#03181a;font-weight:700;cursor:pointer}
+  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent);padding:8px 10px;border-radius:10px;cursor:pointer}
+  .container{max-width:var(--max-width);margin:32px auto;padding:20px}
+  .hero{display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:center}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:22px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+  h1{margin:0;font-size:28px}
+  p.lead{color:var(--muted);margin-top:10px;margin-bottom:0}
+  .small{color:var(--muted);font-size:13px}
+  .field{margin-top:14px}
+  input[type=text]{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+  .row{display:flex;gap:10px;align-items:center}
+  .events{margin-top:12px;background:rgba(255,255,255,0.015);padding:12px;border-radius:10px;max-height:260px;overflow:auto}
+  .event{padding:8px;border-radius:8px;margin-bottom:8px;background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));font-size:14px}
+  footer{margin-top:28px;padding:18px;text-align:center;color:var(--muted);font-size:14px}
+  .muted{color:var(--muted)}
+  .meta{display:flex;gap:8px;align-items:center}
+  .status{font-weight:700;padding:6px 8px;border-radius:999px;font-size:13px}
+  .pending{background:#fff4ce;color:#6a4b00}
+  .success{background:#dff7ef;color:#065a45}
+  @media(max-width:960px){ .hero{grid-template-columns:1fr} .nav{padding:12px} .nav-right{gap:6px} }
 </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="1.5" y="1.5" width="21" height="21" rx="6" stroke="rgba(255,255,255,0.06)" fill="rgba(70,230,195,0.06)"/><path d="M8 12h8M8 8h8M8 16h8" stroke="#46e6c3" stroke-width="1.4" stroke-linecap="round"/></svg>
+  <header>
+    <div class="nav">
+      <div class="brand">
+        <div class="logo">Z</div>
         <div>
-          <div class="brand">VoteLock</div>
-          <div class="small muted">Encrypted Voting · Demo</div>
+          <div class="site-title">Zama FHEVM Examples</div>
+          <div class="small">Privacy-first smart contracts</div>
         </div>
       </div>
+
+      <nav>
+        <a href="#home">Home</a>
+        <a href="#voting">Voting</a>
+        <a href="#wallet" id="navWallet">Wallet</a>
+      </nav>
 
       <div class="nav-right">
         <div class="small muted" id="acct">Not connected</div>
-        <button id="connectBtn" class="btn">Connect MetaMask</button>
+        <button id="connectBtn" class="btn">Connect Wallet</button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main class="hero">
-      <section>
-        <h1 class="title">Private on-chain voting — simple, secure, confidential</h1>
-        <p class="lead">Demo of Zama fhEVM voting flow. No need to move funds — add privacy on top of existing EVM chains. Build, test and submit encrypted votes.</p>
+  <main class="container">
+    <section id="home" class="hero">
+      <div>
+        <div class="panel">
+          <h1>Private Voting, public trust</h1>
+          <p class="lead">Build confidential dApps without moving users off-chain. Zama's fhEVM lets developers run encrypted computation so apps keep secrets while still using the security of EVM chains.</p>
 
-        <div class="cards">
-          <div class="card">
-            <h4>Why private voting?</h4>
-            <p>Protect voter choices and ballot secrecy while keeping full on-chain verifiability.</p>
+          <div class="field">
+            <h3 style="margin:0 0 8px 0">Why fhEVM matters</h3>
+            <ul class="small muted">
+              <li>Keep votes, bids and sensitive data encrypted while still processing them on-chain.</li>
+              <li>Integrates with existing EVM chains — no migration required.</li>
+              <li>Developer-friendly: write Solidity, use Zama tools for encryption.</li>
+            </ul>
           </div>
-          <div class="card">
-            <h4>Built for devs</h4>
-            <p>Use standard Solidity + Zama libraries to create private contracts without learning new languages.</p>
+
+        </div>
+      </div>
+
+      <aside>
+        <div class="panel">
+          <div class="meta"><div class="small muted">Network:</div><div id="netInfo" class="small muted">local</div></div>
+          <div style="margin-top:12px">
+            <div class="small muted">Quick actions</div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button id="btnVoting" class="btn-ghost">Go to Voting</button>
+              <button id="quickConnect" class="btn">Connect</button>
+            </div>
           </div>
-          <div class="card">
-            <h4>Plays nice with L1/L2</h4>
-            <p>fhEVM acts as a confidentiality layer — no migration, no fragmentation.</p>
-          </div>
-        </div>
-
-        <div class="vertical-gap">
-          <div class="small muted">Deployment / demo tips</div>
-          <div class="small muted">For public demo use Sepolia or a testnet so others can interact.</div>
-        </div>
-      </section>
-
-      <aside class="panel">
-        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
-          <div>
-            <div class="small muted">Contract address</div>
-            <div style="height:6px"></div>
-            <input id="contractAddress" type="text" placeholder="0xYourDeployedContractAddress">
-          </div>
-          <div style="width:12px"></div>
-        </div>
-
-        <div style="margin-top:12px;display:flex;gap:10px;">
-          <button id="saveAddr" class="btn">Save</button>
-          <button id="loadAddr" class="btn ghost">Load</button>
-          <button id="copyAddrBtn" class="btn ghost">Copy</button>
-        </div>
-
-        <div style="margin-top:16px;">
-          <div class="small muted">Submit encrypted vote</div>
-          <div style="height:8px"></div>
-          <input id="cipherInput" type="text" placeholder="Type fake ciphertext e.g. voteA">
-          <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
-            <button id="registerBtn" class="btn">Register</button>
-            <button id="submitBtn" class="btn">Submit Vote</button>
-            <div style="margin-left:auto" class="small muted">Tx: <span id="txStatus">idle</span></div>
-          </div>
-        </div>
-
-        <div id="events" aria-live="polite">
-          <div class="event">Event log will appear here</div>
+          <div style="margin-top:12px" class="small muted">Demo: Encrypted Voting example using placeholder ciphertext. Replace with Zama SDK output for real FHE flows.</div>
         </div>
       </aside>
-    </main>
+    </section>
+
+    <!-- Voting Section -->
+    <section id="voting" style="margin-top:22px">
+      <div class="panel">
+        <h2 style="margin:0 0 6px 0">Voting (Demo)</h2>
+        <div class="small muted">Deploy the example contract (or use our repo example) and paste address below.</div>
+
+        <div class="field" style="margin-top:12px">
+          <label class="small muted">Contract Address</label>
+          <div class="row" style="margin-top:8px">
+            <input id="contractAddress" type="text" placeholder="0xYourDeployedContractAddress" />
+            <button id="saveAddr" class="btn">Save</button>
+            <button id="loadAddr" class="btn-ghost">Load</button>
+            <button id="copyAddrBtn" class="btn-ghost">Copy</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="small muted">Register & Submit</label>
+          <div class="row" style="margin-top:8px">
+            <button id="registerBtn" class="btn">Register</button>
+            <input id="cipherInput" type="text" placeholder="Enter vote (demo) e.g. voteA" style="flex:1" />
+            <button id="submitBtn" class="btn">Submit Encrypted Vote</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">Note: This demo uses UTF-8 bytes as placeholder ciphertext. For production, use Zama SDK to generate real ciphertext bytes.</div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="row" style="align-items:center;justify-content:space-between">
+            <div class="small muted">Transaction status: <span id="txStatus" class="muted">idle</span></div>
+            <div class="right small muted">Owner = deployer</div>
+          </div>
+
+          <div id="events" class="events" aria-live="polite" style="margin-top:12px"></div>
+        </div>
+
+      </div>
+    </section>
 
     <footer>
-      Built with Zama fhEVM · Demo. Use this UI as the frontend for your bounty submission — replace fake ciphertext with Zama SDK output for real integration.
+      <div class="panel" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">Built with Zama's fhEVM</div>
+          <div class="small muted">Fully Homomorphic Encryption enabling private computation on public blockchains — privacy without migration.</div>
+        </div>
+        <div class="small muted">© <span id="year"></span> • Zama • fhEVM</div>
+      </div>
     </footer>
-  </div>
+  </main>
 
   <!-- Robust ethers loader + app bootstrap -->
   <script>
@@ -141,112 +162,158 @@
       "https://unpkg.com/ethers@6.9.0/dist/ethers.umd.min.js",
       "https://cdn.jsdelivr.net/gh/ethers-io/ethers.js@v6.9.0/dist/ethers.min.js"
     ];
+
     async function loadFrom(src){
-      return new Promise((resolve,reject)=>{
-        const s=document.createElement('script');
-        s.src=src;s.async=true;
-        s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('load failed '+src));
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => reject(new Error('load failed ' + src));
         document.head.appendChild(s);
       });
     }
+
     let ok=false;
     for(const u of CDNS){
-      try{ await loadFrom(u); if(window.ethers){ ok=true; break; } }catch(e){ console.warn('CDN failed',u,e); }
+      try{
+        await loadFrom(u);
+        if (window.ethers){ ok=true; break; }
+      }catch(e){ console.warn('CDN failed', u, e); }
     }
-    if(!ok){ alert('Failed to load ethers.js from CDN. Open console for details.'); console.error('Could not load ethers'); return; }
-    await new Promise(r=>setTimeout(r,50));
+    if(!ok){
+      alert('Failed to load web3 lib (ethers). Check network or open console for errors.');
+      console.error('Could not load ethers from CDNs.');
+      return;
+    }
 
-    // --- app logic ---
+    // small wait to ensure ethers global ready
+    await new Promise(r=>setTimeout(r,60));
+
     (function runApp(){
+      // UI refs
+      const connectBtn = document.getElementById('connectBtn');
+      const quickConnect = document.getElementById('quickConnect');
+      const btnVoting = document.getElementById('btnVoting');
+      const acctEl = document.getElementById('acct');
+      const netInfo = document.getElementById('netInfo');
+      const contractInput = document.getElementById('contractAddress');
+      const saveAddr = document.getElementById('saveAddr');
+      const loadAddr = document.getElementById('loadAddr');
+      const copyAddrBtn = document.getElementById('copyAddrBtn');
+      const registerBtn = document.getElementById('registerBtn');
+      const submitBtn = document.getElementById('submitBtn');
+      const cipherInput = document.getElementById('cipherInput');
+      const txStatus = document.getElementById('txStatus');
+      const eventsEl = document.getElementById('events');
+
+      let provider, signer, contract;
       const ABI = [
         "function register() public",
         "function submitEncryptedVote(bytes calldata) public",
         "event VoteSubmitted(address indexed voter)",
         "event TallyPublished(bytes ciphertextTally)"
       ];
-      const connectBtn = document.getElementById('connectBtn');
-      const acctEl = document.getElementById('acct');
-      const contractInput = document.getElementById('contractAddress');
-      const saveAddr = document.getElementById('saveAddr');
-      const loadAddr = document.getElementById('loadAddr');
-      const registerBtn = document.getElementById('registerBtn');
-      const submitBtn = document.getElementById('submitBtn');
-      const cipherInput = document.getElementById('cipherInput');
-      const txStatus = document.getElementById('txStatus');
-      const eventsEl = document.getElementById('events');
-      const copyAddrBtn = document.getElementById('copyAddrBtn');
 
-      let provider, signer, contract;
+      // helpers
+      function logEvent(t){ const el=document.createElement('div'); el.className='event'; el.innerHTML=`<div style="font-weight:700">${String(t).replaceAll('<','&lt;')}</div>`; eventsEl.prepend(el); }
+      function setAcct(a){ acctEl.textContent = a ? `${a.slice(0,6)}…${a.slice(-4)}` : 'Not connected'; }
+      function setNet(n){ netInfo.textContent = n || 'unknown'; }
+      function setTx(s){ txStatus.textContent = s; }
 
-      function log(msg){ const d=document.createElement('div'); d.className='event'; d.innerHTML=msg; eventsEl.prepend(d); }
+      // nav scroll
+      btnVoting.addEventListener('click', ()=>{ document.getElementById('voting').scrollIntoView({behavior:'smooth'}); });
 
-      connectBtn.addEventListener('click', async ()=>{
-        if(!window.ethereum){ alert('MetaMask not found. Install MetaMask.'); return; }
+      // connect logic
+      async function connectWallet(){
+        if(!window.ethereum){ alert('MetaMask not found. Install a wallet.'); return; }
         try{
           provider = new window.ethers.BrowserProvider(window.ethereum,'any');
           await provider.send('eth_requestAccounts', []);
           signer = await provider.getSigner();
           const addr = await signer.getAddress();
-          acctEl.textContent = addr.slice(0,6)+'…'+addr.slice(-4);
+          setAcct(addr);
           const net = await provider.getNetwork();
-          log('Wallet connected: '+addr+' ('+net.name+')');
-          if(contractInput.value.trim()) await loadContract(contractInput.value.trim());
-        }catch(e){ console.error(e); alert('Wallet connect failed: '+(e?.message||e)); log('Wallet connect failed'); }
-      });
+          setNet(`${net.name} (${net.chainId})`);
+          logEvent('Wallet connected: ' + addr);
+          // auto load saved contract if any
+          const saved = localStorage.getItem('fhe_contract');
+          if(saved) { contractInput.value = saved; await loadContract(saved); }
+        }catch(e){
+          console.error('connect failed', e);
+          alert('Wallet connect failed: ' + (e?.message || e));
+        }
+      }
+      connectBtn.addEventListener('click', connectWallet);
+      quickConnect.addEventListener('click', connectWallet);
 
-      saveAddr.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('Paste contract address');return;} localStorage.setItem('fhe_contract',v); log('Saved contract: '+v); loadContract(v); });
-      loadAddr.addEventListener('click', ()=>{ const s=localStorage.getItem('fhe_contract')||''; if(!s){alert('No saved address');return;} contractInput.value=s; loadContract(s); });
-      copyAddrBtn.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('No address to copy');return;} navigator.clipboard.writeText(v).then(()=>log('Address copied')); });
+      // save/load contract
+      saveAddr.addEventListener('click', ()=>{
+        const v = contractInput.value.trim();
+        if(!v) return alert('Paste contract address');
+        localStorage.setItem('fhe_contract', v);
+        logEvent('Saved contract: ' + v);
+        loadContract(v);
+      });
+      loadAddr.addEventListener('click', ()=>{ const s = localStorage.getItem('fhe_contract'); if(!s) return alert('No saved contract'); contractInput.value = s; loadContract(s); });
+      copyAddrBtn.addEventListener('click', ()=>{ const v = contractInput.value.trim(); if(!v) return alert('No address'); navigator.clipboard.writeText(v).then(()=>logEvent('Copied address')); });
 
       async function loadContract(addr){
         try{
-          if(!window.ethers.isAddress(addr)){ alert('Invalid address'); return; }
+          if(!window.ethers.isAddress(addr)){ alert('Invalid contract address'); return; }
           contract = new window.ethers.Contract(addr, ABI, provider || signer);
-          log('Loaded contract: '+addr);
+          logEvent('Loaded contract: '+addr);
           // subscribe events
-          try{
-            contract.on('VoteSubmitted', (voter)=>{ log('<strong>VoteSubmitted</strong> — '+voter); });
-            contract.on('TallyPublished', (cipher)=>{ let r; try{ r = window.ethers.toUtf8String(cipher); }catch(e){ r = window.ethers.hexlify(cipher).slice(0,80)+'...'; } log('<strong>TallyPublished</strong> — '+r); });
-          }catch(e){ console.warn('subscribe failed', e); }
-        }catch(e){ console.error(e); alert('Load failed: ' + (e?.message||e)); }
+          if(contract.on){
+            contract.on('VoteSubmitted', (v)=>{ logEvent('Event VoteSubmitted by '+v); });
+            contract.on('TallyPublished', (c)=>{ let r; try{ r = window.ethers.toUtf8String(c); } catch(e){ r = window.ethers.hexlify(c).slice(0,60) + '...'; } logEvent('Event TallyPublished — '+r); });
+          }
+        }catch(e){ console.error('loadContract error', e); alert('Load contract failed: '+(e?.message||e)); }
       }
 
       registerBtn.addEventListener('click', async ()=>{
-        if(!signer){ alert('Connect wallet first'); return; }
-        if(!contract){ alert('Load contract first (paste & Save)'); return; }
+        if(!signer) return alert('Connect wallet first');
+        if(!contract) return alert('Load contract first (paste & Save)');
         try{
-          txStatus.textContent='sending...';
+          setTx('Sending register tx...');
           const tx = await contract.connect(signer).register();
-          log('Register tx sent: '+tx.hash);
-          txStatus.innerHTML='<span class="status pending">pending</span> '+tx.hash;
-          const r = await tx.wait();
-          txStatus.innerHTML='<span class="status success">mined</span> '+r.transactionHash;
-          log('Register confirmed');
-        }catch(e){ console.error(e); txStatus.textContent='error'; log('Register failed: '+(e?.message||e)); }
+          logEvent('Register tx sent: ' + tx.hash);
+          setTx('Pending: ' + tx.hash);
+          const receipt = await tx.wait();
+          setTx('Mined: ' + receipt.transactionHash);
+          logEvent('Register confirmed');
+        }catch(e){ console.error(e); setTx('Error'); logEvent('Register failed: '+(e?.message||e)); }
       });
 
       submitBtn.addEventListener('click', async ()=>{
-        if(!signer){ alert('Connect wallet first'); return; }
-        if(!contract){ alert('Load contract first (paste & Save)'); return; }
+        if(!signer) return alert('Connect wallet first');
+        if(!contract) return alert('Load contract first (paste & Save)');
         try{
-          const text = cipherInput.value.trim() || 'voteA';
-          const bytes = window.ethers.toUtf8Bytes(text);
-          txStatus.textContent='sending...';
+          const t = cipherInput.value.trim() || 'voteA';
+          const bytes = window.ethers.toUtf8Bytes(t);
+          setTx('Sending submit tx...');
           const tx = await contract.connect(signer).submitEncryptedVote(bytes);
-          log('Submit tx sent: '+tx.hash);
-          txStatus.innerHTML='<span class="status pending">pending</span> '+tx.hash;
-          const r = await tx.wait();
-          txStatus.innerHTML='<span class="status success">mined</span> '+r.transactionHash;
-          log('Submit confirmed: '+r.transactionHash);
-        }catch(e){ console.error(e); txStatus.textContent='error'; log('Submit failed: '+(e?.message||e)); }
+          logEvent('Submit tx sent: ' + tx.hash);
+          setTx('Pending: ' + tx.hash);
+          const receipt = await tx.wait();
+          setTx('Mined: ' + receipt.transactionHash);
+          logEvent('Submit confirmed: ' + receipt.transactionHash);
+        }catch(e){ console.error(e); setTx('Error'); logEvent('Submit failed: ' + (e?.message||e)); }
       });
 
-      // load saved contract on init
+      // on load: set year and load saved contract if any (readonly)
+      document.getElementById('year').textContent = new Date().getFullYear();
       const saved = localStorage.getItem('fhe_contract') || '';
       if(saved) contractInput.value = saved;
-      if(saved && window.ethereum){ provider = new window.ethers.BrowserProvider(window.ethereum); provider.getNetwork().then(n=>log('Detected network: '+n.name)); loadContract(saved).catch(()=>{}); }
-    })();
-  })();
+      if(saved && window.ethereum){
+        provider = new window.ethers.BrowserProvider(window.ethereum);
+        provider.getNetwork().then(n=> setNet(`${n.name} (${n.chainId})`)).catch(()=>{});
+        loadContract(saved).catch(()=>{});
+      }
+
+    })(); // runApp
+  })(); // loader
   </script>
 </body>
 </html>
+
