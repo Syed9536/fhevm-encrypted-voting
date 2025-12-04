@@ -1,48 +1,251 @@
+# Make sure you are in repo root
+cd ~/Desktop/fhevm-encrypted-voting   # change path if you cloned elsewhere
+
+# Create frontend folder if missing
+mkdir -p examples/encrypted-voting/frontend
+
+# Overwrite index.html with the modern UI
+cat > examples/encrypted-voting/frontend/index.html << 'EOF'
 <!doctype html>
-<html>
-  <head><meta charset="utf-8" /><title>Encrypted Voting Demo</title></head>
-  <body>
-    <h1>Encrypted Voting — Demo</h1>
-    <button id="connect">Connect Wallet</button>
-    <div><button id="register">Register</button></div>
-    <div>
-      <input id="cipher" placeholder="Type fake ciphertext e.g. voteA" />
-      <button id="submit">Submit Encrypted Vote</button>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Encrypted Voting — Demo</title>
+
+  <!-- Minimal modern CSS (no frameworks) -->
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#6ee7b7; --muted:#9aa4b2;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071029 0%, #07172a 100%);color:#e6eef6}
+    .wrap{max-width:880px;margin:40px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    h1{margin:0;font-size:22px;letter-spacing:-0.2px}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px}
+    .card{background:var(--card);border-radius:12px;padding:20px;margin-top:18px;box-shadow:0 6px 24px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.02)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    button{background:linear-gradient(90deg,var(--accent),#60a5fa);border:none;padding:8px 12px;border-radius:8px;color:#04111a;font-weight:600;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+    input[type=text]{padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:#e6eef6;min-width:280px}
+    label{font-size:13px;color:var(--muted)}
+    .muted{color:var(--muted);font-size:13px}
+    .events{max-height:220px;overflow:auto;margin-top:10px;border-radius:8px;padding:12px;background:rgba(255,255,255,0.02)}
+    .event{padding:8px;border-radius:6px;margin-bottom:8px;background:linear-gradient(90deg, rgba(10,12,16,0.2), rgba(255,255,255,0.01));font-size:14px}
+    .status{display:inline-block;padding:6px 8px;border-radius:999px;font-weight:700;font-size:12px}
+    .status-pending{background:#ffecb3;color:#6a4b00}
+    .status-success{background:#d1fae5;color:#064e3b}
+    .foot{margin-top:18px;color:var(--muted);font-size:13px}
+    .small{font-size:13px;color:var(--muted)}
+    .right{margin-left:auto}
+    @media(max-width:640px){ .row{flex-direction:column;align-items:stretch} input[type=text]{width:100%} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Encrypted Voting — Demo</h1>
+        <div class="sub">Demo using Zama FHEVM example contract (placeholder ciphertext). Connect wallet → register → submit encrypted vote.</div>
+      </div>
+
+      <div class="row">
+        <div id="acct" class="small muted">Not connected</div>
+        <button id="connectBtn">Connect Wallet</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="row" style="align-items:flex-start">
+        <div style="flex:1;min-width:320px">
+          <div style="margin-bottom:10px">
+            <label>Contract address (paste here after deploy)</label><br/>
+            <input id="contractAddress" type="text" placeholder="0xYourDeployedContractAddress" />
+            <div class="small muted">You must paste the deployed contract address here and Save → then actions will call the contract.</div>
+          </div>
+
+          <div style="margin-top:10px" class="row">
+            <button id="saveAddr" class="btn-ghost">Save Address</button>
+            <button id="registerBtn" class="btn-ghost">Register</button>
+            <div class="right small muted">Owner = deployer (for tally)</div>
+          </div>
+
+          <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:14px 0"/>
+
+          <div>
+            <label>Submit encrypted vote (fake ciphertext for demo)</label>
+            <div class="row" style="margin-top:8px">
+              <input id="cipherInput" type="text" placeholder="Type fake ciphertext e.g. voteA" />
+              <button id="submitBtn">Submit Encrypted Vote</button>
+            </div>
+            <div class="small muted" style="margin-top:8px">Note: Replace with Zama SDK generated ciphertext bytes for real FHE integration.</div>
+          </div>
+        </div>
+
+        <div style="width:320px;margin-left:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <label>Tx Status</label>
+              <div id="txStatus" class="muted small">Idle</div>
+            </div>
+            <div style="text-align:right">
+              <label>Network</label>
+              <div id="netName" class="muted small">local</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Event feed</label>
+            <div id="events" class="events"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div class="small">Tips: Use Sepolia or goerli testnet for a public demo. If you want, I can deploy contract to Sepolia and give address for the demo.</div>
+      </div>
     </div>
+  </div>
 
-    <script src="https://cdn.ethers.io/lib/ethers-5.6.umd.min.js" type="application/javascript"></script>
-    <script>
-      const contractAddress = "<PASTE_DEPLOYED_CONTRACT_ADDRESS>";
-      const abi = [
-        "function register() public",
-        "function submitEncryptedVote(bytes calldata) public",
-      ];
+  <!-- ethers v6 -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
+  <script>
+    // ======= CONFIG ========
+    // If you already deployed contract, paste default address here to auto-load.
+    // You can also paste in UI field and click Save.
+    let contractAddress = ""; // <- paste deployed address or leave empty
+    const contractAbi = [
+      "function register() public",
+      "function submitEncryptedVote(bytes calldata) public",
+      "event VoteSubmitted(address indexed voter)",
+      "event TallyPublished(bytes ciphertextTally)"
+    ];
+    // ========================
 
-      let provider, signer, contract;
+    const connectBtn = document.getElementById('connectBtn');
+    const acctEl = document.getElementById('acct');
+    const netNameEl = document.getElementById('netName');
+    const txStatus = document.getElementById('txStatus');
+    const eventsEl = document.getElementById('events');
+    const saveAddrBtn = document.getElementById('saveAddr');
+    const contractInput = document.getElementById('contractAddress');
+    const registerBtn = document.getElementById('registerBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const cipherInput = document.getElementById('cipherInput');
 
-      document.getElementById('connect').onclick = async () => {
-        if (!window.ethereum) { alert("Install MetaMask"); return; }
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-        contract = new ethers.Contract(contractAddress, abi, signer);
-        alert("Connected");
-      };
+    let provider, signer, contract;
 
-      document.getElementById('register').onclick = async () => {
-        if (!contract) return alert("Connect wallet first");
-        await contract.register();
-        alert('Registered (tx sent)');
-      };
+    function addEvent(text, type='info'){
+      const el = document.createElement('div');
+      el.className = 'event';
+      el.innerHTML = '<div style="font-weight:700">'+text+'</div>';
+      eventsEl.prepend(el);
+    }
 
-      document.getElementById('submit').onclick = async () => {
-        if (!contract) return alert("Connect wallet first");
-        const text = document.getElementById('cipher').value || "voteA";
-        const bytes = ethers.utils.toUtf8Bytes(text);
-        const tx = await contract.submitEncryptedVote(bytes);
-        await tx.wait();
-        alert('Submitted (tx mined)');
-      };
-    </script>
-  </body>
+    async function connectWallet(){
+      if(!window.ethereum) return alert('Install MetaMask');
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      const addr = await signer.getAddress();
+      acctEl.textContent = addr.slice(0,6)+'…'+addr.slice(-4);
+      const network = await provider.getNetwork();
+      netNameEl.textContent = network.name + ' ('+network.chainId+')';
+      addEvent('Wallet connected: '+acctEl.textContent);
+      if(contractAddress) loadContract();
+    }
+
+    async function loadContract(){
+      if(!contractAddress) return alert('Paste contract address and click Save');
+      try{
+        contract = new ethers.Contract(contractAddress, contractAbi, signer || provider);
+        addEvent('Loaded contract: '+contractAddress);
+      }catch(e){
+        console.error(e);
+        alert('Failed to load contract. Check address & network.');
+      }
+    }
+
+    connectBtn.onclick = connectWallet;
+
+    saveAddrBtn.onclick = ()=>{
+      const v = contractInput.value.trim();
+      if(!v) return alert('Paste contract address first');
+      contractAddress = v;
+      localStorage.setItem('fhe_contract', v);
+      addEvent('Contract address saved locally');
+      loadContract();
+    };
+
+    // on load, try to set from config or localStorage
+    window.addEventListener('load', ()=>{
+      if(!contractAddress && localStorage.getItem('fhe_contract')) contractAddress = localStorage.getItem('fhe_contract');
+      if(contractAddress){ contractInput.value = contractAddress; }
+    });
+
+    registerBtn.onclick = async ()=>{
+      if(!signer) return alert('Connect wallet first');
+      if(!contract) return alert('Load contract (paste address + Save)');
+      try{
+        txStatus.textContent = 'Sending register tx...';
+        const tx = await contract.connect(signer).register();
+        addEvent('Register tx sent: '+tx.hash);
+        txStatus.innerHTML = '<span class="status status-pending">Pending</span> '+tx.hash;
+        const receipt = await tx.wait();
+        txStatus.innerHTML = '<span class="status status-success">Mined</span> '+receipt.transactionHash;
+        addEvent('Register confirmed');
+      }catch(e){
+        console.error(e);
+        addEvent('Register failed: '+(e?.message||e));
+        txStatus.textContent = 'Error';
+      }
+    };
+
+    submitBtn.onclick = async ()=>{
+      if(!signer) return alert('Connect wallet first');
+      if(!contract) return alert('Load contract (paste address + Save)');
+      try{
+        const text = cipherInput.value.trim() || 'voteA';
+        // ethers v6: toUtf8Bytes
+        const bytes = ethers.toUtf8Bytes(text);
+        txStatus.textContent = 'Sending submit tx...';
+        const tx = await contract.connect(signer).submitEncryptedVote(bytes);
+        addEvent('Submit tx sent: '+tx.hash);
+        txStatus.innerHTML = '<span class="status status-pending">Pending</span> '+tx.hash;
+        const receipt = await tx.wait();
+        txStatus.innerHTML = '<span class="status status-success">Mined</span> '+receipt.transactionHash;
+        addEvent('Submit confirmed: '+receipt.transactionHash);
+      }catch(e){
+        console.error(e);
+        addEvent('Submit failed: '+(e?.message||e));
+        txStatus.textContent = 'Error';
+      }
+    };
+
+    // subscribe to events if contract loaded and provider set
+    async function watchEvents(){
+      if(!contract) return;
+      try{
+        contract.on('VoteSubmitted', (voter) => {
+          addEvent('Event VoteSubmitted by '+voter);
+        });
+        contract.on('TallyPublished', (cipher) => {
+          addEvent('Event TallyPublished (ciphertext)');
+        });
+      }catch(e){ console.warn('evt',e); }
+    }
+
+    // watch after loading contract
+    const origLoad = loadContract;
+    loadContract = async ()=>{
+      await origLoad();
+      await watchEvents();
+    };
+
+  </script>
+</body>
 </html>
+EOF
+
