@@ -1,131 +1,222 @@
-<!-- Robust ethers loader + app bootstrap -->
-<script>
-(async function(){
-  const CDNS = [
-    "https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js",
-    "https://unpkg.com/ethers@6.9.0/dist/ethers.umd.min.js",
-    "https://cdn.jsdelivr.net/gh/ethers-io/ethers.js@v6.9.0/dist/ethers.min.js"
-  ];
-
-  async function loadFrom(src){
-    return new Promise((resolve, reject)=>{
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = () => resolve(true);
-      s.onerror = () => reject(new Error('load failed ' + src));
-      document.head.appendChild(s);
-    });
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Encrypted Voting — Demo</title>
+<style>
+  :root{
+    --bg:#071024;
+    --panel:#0f1724;
+    --muted:#9aa7bf;
+    --accent:#2DD4BF;
+    --glass: rgba(255,255,255,0.03);
   }
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
+  body{background:linear-gradient(180deg,#041022 0%, #071224 60%); color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:36px;}
+  .wrap{width:100%;max-width:980px;}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:28px; box-shadow: 0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
+  .row{display:flex;gap:12px;align-items:center;}
+  h1{margin:0 0 12px 0;font-size:20px;}
+  p.lead{margin:0 0 18px 0;color:var(--muted);}
+  .controls{display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:center;margin-bottom:18px;}
+  input[type=text]{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:14px;}
+  button{background:var(--panel);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer;font-weight:600;}
+  .muted{color:var(--muted);font-size:13px;}
+  .box{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);}
+  .two{display:flex;gap:10px;}
+  #events{max-height:220px;overflow:auto;margin-top:12px;padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(0,0,0,0.08), rgba(255,255,255,0.01));}
+  .event{padding:8px 10px;border-radius:6px;margin-bottom:8px;background:rgba(255,255,255,0.02);font-size:13px;}
+  .status.pending{color:#ffb020;font-weight:700;}
+  .status.success{color:#2dd4bf;font-weight:700;}
+  .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:8px;}
+  .right{margin-left:auto;}
+  footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center;}
+  @media(max-width:720px){ .controls{grid-template-columns:1fr; } .two{flex-direction:column;} .card{padding:18px;} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Encrypted Voting — Demo</h1>
+      <p class="lead">Demo using Zama fhEVM example contract (placeholder ciphertext). Connect wallet → Save contract → Register → Submit encrypted vote.</p>
 
-  // try cdns in order
-  let ok=false;
-  for(const u of CDNS){
-    try{
-      await loadFrom(u);
-      if (window.ethers){ ok=true; break; }
-    }catch(e){ console.warn('CDN failed', u, e); }
-  }
-  if(!ok){
-    alert('Failed to load web3 lib (ethers). Check network or open console for errors.');
-    console.error('Could not load ethers from CDNs.');
-    return;
-  }
+      <div class="meta">
+        <div id="acct" class="muted">Not connected</div>
+        <div id="netInfo" class="muted right">Network: local</div>
+      </div>
 
-  // wait microtask so window.ethers is ready
-  await new Promise(r=>setTimeout(r,50));
+      <div class="controls">
+        <div>
+          <label class="muted">Contract address</label>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <input id="contractAddress" type="text" placeholder="0xYourDeployedContractAddress" />
+            <button id="saveAddr">Save</button>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button id="loadAddr">Load</button>
+            <button id="copyAddrBtn">Copy</button>
+            <button id="clearBtn">Clear Events</button>
+          </div>
+        </div>
 
-  // now run the app (same as earlier, but using window.ethers)
-  (function runApp(){
-    // --- start of app code ---
-    let DEFAULT_CONTRACT = ""; 
-    const ABI = [
-      "function register() public",
-      "function submitEncryptedVote(bytes calldata) public",
-      "event VoteSubmitted(address indexed voter)",
-      "event TallyPublished(bytes ciphertextTally)"
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="connectBtn">Connect Wallet</button>
+          <div style="display:flex;gap:8px;">
+            <button id="registerBtn">Register</button>
+            <button id="registerBtnAlt" disabled style="opacity:.6;cursor:default">Owner Tally (demo)</button>
+          </div>
+          <div style="text-align:right;color:var(--muted);font-size:13px;">Tx Status: <span id="txStatus" class="muted">idle</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label class="muted">Submit encrypted vote (demo)</label>
+        <div class="two" style="margin-top:8px;">
+          <input id="cipherInput" type="text" placeholder="Type fake ciphertext e.g. voteA" />
+          <button id="submitBtn">Submit Encrypted Vote</button>
+        </div>
+        <div id="events" class="box" aria-live="polite" style="margin-top:12px;">
+          <!-- events log -->
+        </div>
+      </div>
+
+      <footer>Tips: Use Sepolia or Goerli testnet for a public demo. Replace placeholder ciphertext with Zama SDK bytes for real FHE integration.</footer>
+    </div>
+  </div>
+
+  <!-- Robust ethers loader + app bootstrap -->
+  <script>
+  (async function(){
+    const CDNS = [
+      "https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js",
+      "https://unpkg.com/ethers@6.9.0/dist/ethers.umd.min.js",
+      "https://cdn.jsdelivr.net/gh/ethers-io/ethers.js@v6.9.0/dist/ethers.min.js"
     ];
 
-    const connectBtn = document.getElementById('connectBtn');
-    const acctEl = document.getElementById('acct');
-    const contractInput = document.getElementById('contractAddress');
-    const saveAddr = document.getElementById('saveAddr');
-    const loadAddr = document.getElementById('loadAddr');
-    const registerBtn = document.getElementById('registerBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const cipherInput = document.getElementById('cipherInput');
-    const txStatus = document.getElementById('txStatus');
-    const eventsEl = document.getElementById('events');
-    const netInfo = document.getElementById('netInfo');
-    const copyAddrBtn = document.getElementById('copyAddrBtn');
-    const clearBtn = document.getElementById('clearBtn');
-
-    let provider, signer, contract;
-
-    function logEvent(text){ const el=document.createElement('div'); el.className='event'; el.innerHTML=`<div style="font-weight:700">${String(text).replaceAll('<','&lt;')}</div>`; eventsEl.prepend(el); }
-
-    connectBtn.addEventListener('click', async ()=>{
-      if (!window.ethereum){ alert('MetaMask not found.'); return; }
-      try{
-        provider = new window.ethers.BrowserProvider(window.ethereum,'any');
-        await provider.send('eth_requestAccounts', []);
-        signer = await provider.getSigner();
-        const addr = await signer.getAddress();
-        acctEl.textContent = `${addr.slice(0,6)}…${addr.slice(-4)}`;
-        const network = await provider.getNetwork();
-        netInfo.textContent = `${network.name} (${network.chainId})`;
-        logEvent('Wallet connected: ' + addr);
-        if (contractInput.value.trim()) await loadContract(contractInput.value.trim());
-      }catch(err){
-        console.error(err);
-        alert('Wallet connect failed: ' + (err?.message || err));
-      }
-    });
-
-    saveAddr.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('Paste contract address');return;} localStorage.setItem('fhe_contract',v); logEvent('Saved '+v); loadContract(v);});
-    loadAddr.addEventListener('click', ()=>{ const s=localStorage.getItem('fhe_contract')||DEFAULT_CONTRACT; if(!s){alert('No saved address');return;} contractInput.value=s; loadContract(s);});
-    copyAddrBtn.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('No address');return;} navigator.clipboard.writeText(v).then(()=>logEvent('Copied')); });
-    clearBtn.addEventListener('click', ()=>{ eventsEl.innerHTML=''; logEvent('Cleared'); });
-
-    async function loadContract(addr){
-      try{
-        if(!window.ethers.isAddress(addr)){ alert('Invalid address'); return; }
-        contract = new window.ethers.Contract(addr, ABI, provider || signer);
-        logEvent('Loaded ' + addr);
-        contract.on && contract.on('VoteSubmitted', (v)=>{ logEvent('Event: VoteSubmitted ' + v);});
-        contract.on && contract.on('TallyPublished', (c)=>{ let r; try{ r = window.ethers.toUtf8String(c); }catch(e){ r = window.ethers.hexlify(c).slice(0,60) + '...'; } logEvent('Tally: ' + r);});
-      }catch(e){ console.error(e); alert('Load contract failed: '+(e?.message||e)); }
+    async function loadFrom(src){
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => reject(new Error('load failed ' + src));
+        document.head.appendChild(s);
+      });
     }
 
-    registerBtn.addEventListener('click', async ()=>{
-      if(!signer){ alert('Connect wallet'); return; }
-      if(!contract){ alert('Load contract'); return; }
-      try{ txStatus.textContent='Sending...'; const tx = await contract.connect(signer).register(); logEvent('Register sent '+tx.hash); txStatus.innerHTML=`<span class="status pending">Pending</span> ${tx.hash}`; const r = await tx.wait(); txStatus.innerHTML=`<span class="status success">Mined</span> ${r.transactionHash}`; logEvent('Register confirmed'); }catch(e){ console.error(e); txStatus.textContent='Error'; logEvent('Register failed'); }
-    });
-
-    submitBtn.addEventListener('click', async ()=>{
-      if(!signer){ alert('Connect wallet'); return; }
-      if(!contract){ alert('Load contract'); return; }
+    // try cdns in order
+    let ok=false;
+    for(const u of CDNS){
       try{
-        const t = cipherInput.value.trim()||'voteA';
-        const b = window.ethers.toUtf8Bytes(t);
-        txStatus.textContent='Sending...';
-        const tx = await contract.connect(signer).submitEncryptedVote(b);
-        logEvent('Submit sent ' + tx.hash);
-        txStatus.innerHTML=`<span class="status pending">Pending</span> ${tx.hash}`;
-        const r = await tx.wait();
-        txStatus.innerHTML=`<span class="status success">Mined</span> ${r.transactionHash}`;
-        logEvent('Submit confirmed');
-      }catch(e){ console.error(e); txStatus.textContent='Error'; logEvent('Submit failed'); }
-    });
+        await loadFrom(u);
+        if (window.ethers){ ok=true; break; }
+      }catch(e){ console.warn('CDN failed', u, e); }
+    }
+    if(!ok){
+      alert('Failed to load web3 lib (ethers). Check network or open console for errors.');
+      console.error('Could not load ethers from CDNs.');
+      // still show minimal UI fallback
+      return;
+    }
 
-    // initial load saved if any
-    const saved = localStorage.getItem('fhe_contract')||DEFAULT_CONTRACT;
-    if(saved) contractInput.value = saved;
-    if(saved && window.ethereum){ provider = new window.ethers.BrowserProvider(window.ethereum); provider.getNetwork().then(n=>netInfo.textContent = `${n.name} (${n.chainId})`).catch(()=>{}); loadContract(saved).catch(()=>{}); }
+    // wait microtask so window.ethers is ready
+    await new Promise(r=>setTimeout(r,50));
 
-    // -- end runApp --
+    // --- app code ---
+    (function runApp(){
+      let DEFAULT_CONTRACT = ""; 
+      const ABI = [
+        "function register() public",
+        "function submitEncryptedVote(bytes calldata) public",
+        "event VoteSubmitted(address indexed voter)",
+        "event TallyPublished(bytes ciphertextTally)"
+      ];
+
+      const connectBtn = document.getElementById('connectBtn');
+      const acctEl = document.getElementById('acct');
+      const contractInput = document.getElementById('contractAddress');
+      const saveAddr = document.getElementById('saveAddr');
+      const loadAddr = document.getElementById('loadAddr');
+      const registerBtn = document.getElementById('registerBtn');
+      const submitBtn = document.getElementById('submitBtn');
+      const cipherInput = document.getElementById('cipherInput');
+      const txStatus = document.getElementById('txStatus');
+      const eventsEl = document.getElementById('events');
+      const netInfo = document.getElementById('netInfo');
+      const copyAddrBtn = document.getElementById('copyAddrBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      let provider, signer, contract;
+
+      function logEvent(text){ const el=document.createElement('div'); el.className='event'; el.innerHTML=`<div style="font-weight:700">${String(text).replaceAll('<','&lt;')}</div>`; eventsEl.prepend(el); }
+
+      connectBtn.addEventListener('click', async ()=>{
+        if (!window.ethereum){ alert('MetaMask not found. Please install a web3 wallet like MetaMask.'); return; }
+        try{
+          provider = new window.ethers.BrowserProvider(window.ethereum,'any');
+          await provider.send('eth_requestAccounts', []);
+          signer = await provider.getSigner();
+          const addr = await signer.getAddress();
+          acctEl.textContent = `${addr.slice(0,6)}…${addr.slice(-4)}`;
+          const network = await provider.getNetwork();
+          netInfo.textContent = `${network.name} (${network.chainId})`;
+          logEvent('Wallet connected: ' + addr);
+          if (contractInput.value.trim()) await loadContract(contractInput.value.trim());
+        }catch(err){
+          console.error(err);
+          alert('Wallet connect failed: ' + (err?.message || err));
+        }
+      });
+
+      saveAddr.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('Paste contract address');return;} localStorage.setItem('fhe_contract',v); logEvent('Saved '+v); loadContract(v);});
+      loadAddr.addEventListener('click', ()=>{ const s=localStorage.getItem('fhe_contract')||DEFAULT_CONTRACT; if(!s){alert('No saved address');return;} contractInput.value=s; loadContract(s);});
+      copyAddrBtn.addEventListener('click', ()=>{ const v=contractInput.value.trim(); if(!v){alert('No address');return;} navigator.clipboard.writeText(v).then(()=>logEvent('Copied')); });
+      clearBtn.addEventListener('click', ()=>{ eventsEl.innerHTML=''; logEvent('Cleared'); });
+
+      async function loadContract(addr){
+        try{
+          if(!window.ethers.isAddress(addr)){ alert('Invalid address'); return; }
+          contract = new window.ethers.Contract(addr, ABI, provider || signer);
+          logEvent('Loaded ' + addr);
+          contract.on && contract.on('VoteSubmitted', (v)=>{ logEvent('Event: VoteSubmitted ' + v);});
+          contract.on && contract.on('TallyPublished', (c)=>{ let r; try{ r = window.ethers.toUtf8String(c); }catch(e){ r = window.ethers.hexlify(c).slice(0,60) + '...'; } logEvent('Tally: ' + r);});
+        }catch(e){ console.error(e); alert('Load contract failed: '+(e?.message||e)); }
+      }
+
+      registerBtn.addEventListener('click', async ()=>{
+        if(!signer){ alert('Connect wallet first'); return; }
+        if(!contract){ alert('Load contract first (paste & Save)'); return; }
+        try{ txStatus.textContent='Sending register tx...'; const tx = await contract.connect(signer).register(); logEvent('Register tx sent: ' + tx.hash); txStatus.innerHTML=`<span class="status pending">Pending</span> ${tx.hash}`; const receipt = await tx.wait(); txStatus.innerHTML=`<span class="status success">Mined</span> ${receipt.transactionHash}`; logEvent('Register confirmed'); }catch(err){ console.error(err); txStatus.textContent='Error'; logEvent('Register failed: ' + (err?.message || err)); }
+      });
+
+      submitBtn.addEventListener('click', async ()=>{
+        if(!signer){ alert('Connect wallet first'); return; }
+        if(!contract){ alert('Load contract first (paste & Save)'); return; }
+        try{
+          const text = cipherInput.value.trim() || 'voteA';
+          const bytes = window.ethers.toUtf8Bytes(text);
+          txStatus.textContent = 'Sending submit tx...';
+          const tx = await contract.connect(signer).submitEncryptedVote(bytes);
+          logEvent('Submit tx sent: ' + tx.hash);
+          txStatus.innerHTML = `<span class="status pending">Pending</span> ${tx.hash}`;
+          const receipt = await tx.wait();
+          txStatus.innerHTML = `<span class="status success">Mined</span> ${receipt.transactionHash}`;
+          logEvent('Submit confirmed: ' + receipt.transactionHash);
+        }catch (err){
+          console.error(err);
+          txStatus.textContent = 'Error';
+          logEvent('Submit failed: ' + (err?.message || err));
+        }
+      });
+
+      // initial load saved if any
+      const saved = localStorage.getItem('fhe_contract')||DEFAULT_CONTRACT;
+      if(saved) contractInput.value = saved;
+      if(saved && window.ethereum){ provider = new window.ethers.BrowserProvider(window.ethereum); provider.getNetwork().then(n=>netInfo.textContent = `${n.name} (${n.chainId})`).catch(()=>{}); loadContract(saved).catch(()=>{}); }
+    })();
   })();
-})();
-</script>
+  </script>
 
+</body>
+</html>
